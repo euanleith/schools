@@ -89,7 +89,7 @@ for year in years:
     #print('('+str(has[0]+hasnt[0])+'/' + str(total)+')')
     plt.title(year+' ('+str(has[0]+hasnt[0])+'/'+str(total)+')')
     plt.xticks(ind, recordtypes)
-    plt.yticks(np.arange(0, has[0]+hasnt[0], 30))
+    plt.yticks(np.arange(0, has[0]+hasnt[0]+50, 50))
     
 #plt.legend((p1[0], p2[0]), ('has', 'hasnt'),bbox_to_anchor=(1.2,1))
 #plt.suptitle('Schools dns')
