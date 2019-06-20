@@ -1,0 +1,228 @@
+List of schools at https://www.education.ie/en/Publications/Statistics/Data-on-Individual-Schools/
+  want to take out emails from list, and from teacher’s emails (seeing any outside hosts, e.g. gmail)
+  this will give the domain name, -> IP address -> look at dns/zgrab for info
+
+Search by roll at https://www.education.ie/en/find-a-school/School-Detail/?roll=XXXXXX to get education.ie page for each school, where email and website can be found and compared to the above
+  there's a bunch of schools without emails or urls given
+
+Remove any emails at non-school addresses (e.g. eircom.net)
+
+Compare 3 pages found to get ip and associated url
+  -note some have multiple ip addresses -> need to try zgrab for both...
+  -there's loads of schools with differences between these 3
+  -i noticed a lot of 301 status codes (meaning moved permanently),
+  which could have meant that i was using the wrong of the 3 urls,
+  so i changed AddWebDetail so it checks through all 3 urls
+  to find the most suitable (based on a hierarchy of status codes; 20x > 30x> 40x/50x (could be done better?))
+    idk how good of an idea this was :)
+
+Perform DNS lookup on these urls (on most suitable url(~) for each school)
+  looking for;
+    AAAA - IPv6 address
+    MX - record of mail server (mail host)
+    DS - fp which is set to the website the first time a user connects to it, so when website is accessed again, can see if ip has that fingerprint, i.e. if it doesn't, someone else is pretending to be that website
+      -useful, but hard/annoying to implement?
+    CAA - who can give certs (without one, anyone can give certs)
+    SPF - says who can send mail (without one, anyone can send emails from that url?)
+    TXT - readable info? -spf often found here???
+    CNAME - pointer, will show host if any
+
+Perform zgrab on these urls (on most suitable url(~) for each school)
+  looking for; (?)
+    port 80 - HTTP-dets
+    port 443, with SNI - TLS-dets, HTTP-dets
+    port 443, without SNI - TLS-dets, HTTP-dets
+  notes:
+    looks for the most suitable of the 3 urls by going with the first result found, but prioritising those with paths
+    if port 80 returns a 30x, goes to the redirect (if it's different from the url just used), and uses that data instead, because that's the site that's actually used
+      all redirections are stored in schools2019.xlsx in column 'AN'
+    increased the timeout from 4 to 15 because several schools just needed more time to respond
+
+
+
+Columns;
+  email from list,
+  website of email (invalid ones removed)
+  roll number
+  education.ie web page associated with roll number
+  eircode
+  email from education.ie page (indiv pg) (host removed)
+  url from education.ie
+  ip
+  url
+  dns lookup;
+    AAAA
+    MX
+    DS
+    CAA
+    SPF
+    TXT
+  zgrab stuff
+    order: port 80, 443(goes to default), 443 with sni;
+      status_code (indicates if request successful)
+      body_len
+      !port 80;
+        names (website host - who signed certificate?)
+        fp (fingerprint (key))
+        timely (if cert expired)
+        self_signed (signed their own SSL cert (~issues...))
+        rsalen (lengths of rsa public keys (bigger is better, should be 2^n))
+        cipher_suite (method of encryption (which ones are good/bad?))
+        browser_trusted (if who signed their cert is good(on a list))
+  CNAME (should be in dns lookup, but was only added later)
+  A (same; just making sure there's nothing weird)
+  errors
+  url used
+  redirects
+
+
+Then look at the data:
+  parseZgrab: shows all the info from zgrab
+  parseMX/names: shows mx info from dnslookup, and names from zgrab
+  parseDNS: shows dns info
+  parseCipherSuites: shows how many schools used weak cipher suites
+  parsefp: shows any duplicate fp's with different hosts
+  parseKeyLengths: shows if any key lengths != 2^n
+  search: can look up all info on a given school
+  ...
+
+
+Looking at data:
+  data:
+    dns: basically nothing, except for IPv6 which has a few
+    zgrab:
+      key lengths: all ok
+      cipher suites: quite a lot with 0x2f, otherwise ok
+      fp: ok
+      bools:
+        timely: ~80% (ok, but should notify)
+        self signed:~30% (ok, not great)
+        browser trusted: ~50% (not great) (except 2019 443 without sni: 70%)
+    mx: mostly hosted...
+    names:
+      with sni: mostly hosted (makes sense?)
+      without sni: ~50% (ok, still notable)
+  overall:
+    zgrab, names: ok not great
+    dns, mx: bad(?)
+  differences between 2018 and 2019:
+    [Note]: success rate for zgrab might be different between years, so should be looking for proportional changes
+    zgrab:
+      ~weird number of 301 status codes in 2019 443 without sni...
+        idk maybe should do zgrab multiple times or something
+      timely: slight improvement
+      self signed: slight improvement
+      browser trusted: slight improvement (best of these for 443 without sni)
+      fp: all duplicates seem to come from having the same host, so ok
+      key lengths: all ok
+      cipher suites: slightly worse (except for 0x0005)~
+    dns:
+      AAAA, CAA, SPF: slight improvement
+      MX, TXT: ok improvement
+      DS: used to have 1, now 0...
+    MX:
+      Self owned: vs hosted: decrease in self owned
+      Num hosts: quite a bit less (weird, good/bad?)
+        Seems like most of these were hosts with 1 school, who moved to ones with multiple, but idk
+        Quite a few more in outlook, otherwise small differences
+    Names:
+      443 with sni:
+        Self owned vs hosted: ok increase in self owned
+        Num hosts: mid more (a few changes of ~10)
+        Uncategorised: quite different
+      443 without sni:
+        Self owned vs hosted: ok increase in self owned
+        Num hosts: slight more (mostly odin (+20))
+        Uncategorised: quite different, way more stdeclans
+      note: distinction between categorised and not is irrelevant
+  overall:
+    mostly slightly better, (maybe insignificantly so)
+    except more hosted for mx (which might be bad)
+      and maybe cipher suites (maybe insignificant, but note 0x2f for 443 without sni)
+  so could focus on them being bad, and how they're not going to improve significantly by themselves
+
+
+answered:
+  ports: (openssl client)
+    if 404 at 443's means they don't exist
+      how come there are 404's but still data can be found? - bad configuration on their behalf
+      does that mean just port 80 at this url? - no
+    why one 443 (of with/without) exists while the other doesn't - maybe my fault; just do separately, it's ok for 2018
+    note: having all -1's isn't reliable; some just didn't give good responses, doesn't necessarily mean no ssl
+    i.e. how to know which just have port 80? - for 2018; check if 443 returned stuff, 2019; check seperately with zgrab/openssl
+  stdeclans & maryimmaculate...? (now back to stdeclans...) - weird stuff, maybe note it
+    e.g. zgrab --port 443 --lookup-domain --tls -http / --timeout 4
+      109.200.26.186 (stlaurencecollege.com)
+      109.200.26.186 (colaistemhuire.ie)
+      109.200.26.186 (stdeclanscollege.ie)
+      same ip
+  what's interesting about cnames? - just how many there are really
+  is there a better way of showing dns? - log
+    spf's: most probably do have them, they're just stored in txt (separate SPF records were added later, and few people ever moved over)
+  i don't entirely understand names;
+    so its the person who signed the ssl cert?
+      does that mean that person is the host?
+        or were they the company that provided the cert?
+      how does this relate to self signed?
+    -basically all of the urls that are on the same list (same key/ip/whatever)
+      -interesting if there's some dodgy websites on the same list as schools (doesn't seem like there is)
+  why is bools worse for without sni? - many hosts self sign, not a big deal if the school's site isn't self signed
+  is it good to have an ipv6? - yes, better in a bunch of ways
+  (kinda) why do some schools - lose dns stuff (e.g. that one ds) from 2018-2019? they expire i guess?
+  what does no mx(/txt) mean? - that mail doesn't exist, so can't have name@school.ie, have to use gmail etc.
+    (what about txt?)
+
+~~~~~AAAA isn't working right now???~~~~~~
+
+notes:
+  best way to inc lsetb?
+  he removed all of the unknown/bad urls completely in 2018, so they aren't being added to the count... (653/716)
+  cipher suites:
+    47(0x2f): doesn't use ephemeral keys, so no forward secrecy, i.e. has a static key, so if the key is found, it can be used for all previous encryptions as well
+  how bad is it to not have dns records?
+    spf: ok to not have
+    caa: bit better to have
+    ds: useful but risky
+
+  keys graph
+    check if shared
+    check individually for interesting stuff
+      seems like odin shares keys between its users (maybe plesk too?)
+      there's a lot with different names but the same key though
+  -what i've done is gotten all dups for keys,
+    then with them, i've checked the names associated with each site using that key
+    to see if there's any correlation
+      i.e. if all of those sites are being hosted by one hoster, therefore that hoster must share keys between (groups of) its users
+    if there's a bunch of individual sites with the same key, something strange might be going on
+
+TODO:
+  finish keys stuff
+    see above
+    how to show?
+      could just show pie chart of duplicate keys, and just say could look into this more idk
+        wouldnt need legend for this
+        maybe look into TXTs?
+        redirects
+
+
+  finalising;
+    titles
+    graph layouts (n/total etc.)
+    actual text
+
+AddWebDetail
+  should only be adding redirects & errors from the url we used
+  need to do port 80 with SNI
+    only for ones where p80 didnt work
+    will need to do ones with timeouts multiple times; might just not have waited long enough
+
+
+    <h2>lcetb(~)</h2>
+    <h3>Method:</h3>
+    checked emails' postfixes(?) given
+    if from manually created list of external urls (e.g. eircom.net, lcetb.ie), removed all copies,
+    else removed any dups
+    <h3>Analysis:</h3>
+    came across a lot of emails from gmail etc., and a lot from lcetb
+    former could be an issue bc of sensitive information, although will be more secure?
+    latter depends on how good those urls are ...check them (they're basically the same as everything else)
