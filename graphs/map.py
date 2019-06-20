@@ -8,7 +8,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import funcs
 
 years=["schools2018.xlsx","schools2019.xlsx"]
-base = geopandas.read_file('Ireland.GeoJSON')
+base = geopandas.read_file('../Ireland.GeoJSON')
 
 for year in years:
     wb = load_workbook('../'+year)
