@@ -20,7 +20,7 @@ for i in range(len(recordtypes)):
     handles.append(mpatches.Patch(color=colours[i],label=recordtypes[i])) # for legend
 
 # background image (ireland)
-base = geopandas.read_file('Ireland.GeoJSON')
+base = geopandas.read_file('../Ireland.GeoJSON')
     
 for year in years:
     wb = load_workbook('../'+year)
