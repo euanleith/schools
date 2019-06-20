@@ -32,7 +32,7 @@ for i in range(len(latCol)):
             tlats.append(lat)
             tlongs.append(long)
       
-world = geopandas.read_file('Ireland.GeoJSON')
+world = geopandas.read_file('../Ireland.GeoJSON')
 ax=world.plot(color='white', edgecolor='black')
 funcs.mapCoords(flats, flongs, ax)
 funcs.mapCoords(tlats, tlongs, ax, colour='b')
