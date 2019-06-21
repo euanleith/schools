@@ -77,14 +77,7 @@ Columns;
 
 
 Then look at the data:
-  parseZgrab: shows all the info from zgrab
-  parseMX/names: shows mx info from dnslookup, and names from zgrab
-  parseDNS: shows dns info
-  parseCipherSuites: shows how many schools used weak cipher suites
-  parsefp: shows any duplicate fp's with different hosts
-  parseKeyLengths: shows if any key lengths != 2^n
-  search: can look up all info on a given school
-  ...
+  see parse/graphs folders
 
 
 Looking at data:
