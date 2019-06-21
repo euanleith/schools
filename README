@@ -41,12 +41,12 @@ Perform zgrab on these urls (on most suitable url(~) for each school)
 
 
 Columns;
-  email from list,
-  website of email (invalid ones removed)
+  email from list
+  website of email (external ones (e.g. gmail) removed)
   roll number
   education.ie web page associated with roll number
   eircode
-  email from education.ie page (indiv pg) (host removed)
+  email from education.ie page (indiv pg) (external ones removed)
   url from education.ie
   ip
   url
@@ -72,64 +72,9 @@ Columns;
   CNAME (should be in dns lookup, but was only added later)
   A (same; just making sure there's nothing weird)
   errors
-  url used
+  url used for zgrab
   redirects
 
 
 Then look at the data:
   see parse/graphs folders
-
-
-Looking at data:
-  data:
-    dns: basically nothing, except for IPv6 which has a few
-    zgrab:
-      key lengths: all ok
-      cipher suites: quite a lot with 0x2f, otherwise ok
-      fp: ok
-      bools:
-        timely: ~80% (ok, but should notify)
-        self signed:~30% (ok, not great)
-        browser trusted: ~50% (not great) (except 2019 443 without sni: 70%)
-    mx: mostly hosted...
-    names:
-      with sni: mostly hosted (makes sense?)
-      without sni: ~50% (ok, still notable)
-  overall:
-    zgrab, names: ok not great
-    dns, mx: bad(?)
-  differences between 2018 and 2019:
-    [Note]: success rate for zgrab might be different between years, so should be looking for proportional changes
-    zgrab:
-      ~weird number of 301 status codes in 2019 443 without sni...
-        idk maybe should do zgrab multiple times or something
-      timely: slight improvement
-      self signed: slight improvement
-      browser trusted: slight improvement (best of these for 443 without sni)
-      fp: all duplicates seem to come from having the same host, so ok
-      key lengths: all ok
-      cipher suites: slightly worse (except for 0x0005)~
-    dns:
-      AAAA, CAA, SPF: slight improvement
-      MX, TXT: ok improvement
-      DS: used to have 1, now 0...
-    MX:
-      Self owned: vs hosted: decrease in self owned
-      Num hosts: quite a bit less (weird, good/bad?)
-        Seems like most of these were hosts with 1 school, who moved to ones with multiple, but idk
-        Quite a few more in outlook, otherwise small differences
-    Names:
-      443 with sni:
-        Self owned vs hosted: ok increase in self owned
-        Num hosts: mid more (a few changes of ~10)
-        Uncategorised: quite different
-      443 without sni:
-        Self owned vs hosted: ok increase in self owned
-        Num hosts: slight more (mostly odin (+20))
-        Uncategorised: quite different, way more stdeclans
-      note: distinction between categorised and not is irrelevant
-  overall:
-    mostly slightly better, (maybe insignificantly so)
-    except more hosted for mx (which might be bad)
-      and maybe cipher suites (maybe insignificant, but note 0x2f for 443 without sni)
-  so could focus on them being bad, and how they're not going to improve significantly by themselves
